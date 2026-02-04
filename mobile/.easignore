@@ -1,0 +1,46 @@
+# Environment files - NEVER upload secrets to EAS build servers
+.env
+.env.*
+!.env.example
+
+# Credentials and signing keys
+*.p8
+*.p12
+*.key
+*.pem
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+*.certSigningRequest
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentation (not needed in build)
+*.md
+LICENSE
+
+# Git
+.git/
+.gitignore
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
