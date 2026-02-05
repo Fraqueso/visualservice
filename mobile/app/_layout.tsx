@@ -8,6 +8,14 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '../store/authStore';
+import { initSentry } from '../services/sentry';
+import { initAnalytics, identifyUser, resetAnalytics } from '../services/analytics';
+
+// Initialize Sentry before anything else
+initSentry();
+
+// Initialize analytics
+initAnalytics();
 
 export {
   ErrorBoundary,
@@ -28,11 +36,21 @@ export default function RootLayout() {
 
   const initialize = useAuthStore((state) => state.initialize);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const session = useAuthStore((state) => state.session);
 
   // Initialize auth on app start
   useEffect(() => {
     initialize();
   }, []);
+
+  // Identify user for analytics when session changes
+  useEffect(() => {
+    if (session?.user) {
+      identifyUser(session.user.id, { email: session.user.email });
+    } else if (isInitialized) {
+      resetAnalytics();
+    }
+  }, [session?.user?.id, isInitialized]);
 
   useEffect(() => {
     if (error) throw error;

@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { verifyPhotoCode, submitFeedback, logVerification } from '../services/supabase';
 import type { VerificationResult } from '../services/supabase';
 import StarRating from '../components/StarRating';
+import { trackEvent } from '../services/analytics';
 
 type ViewState = 'loading' | 'verified' | 'not-found' | 'rating' | 'feedback-submitted';
 
@@ -27,6 +28,23 @@ export default function VerifyPage() {
     }
   }, [code]);
 
+  // Dynamic page title based on state
+  useEffect(() => {
+    switch (viewState) {
+      case 'verified':
+        document.title = `Verified: ${code} - VisualService`;
+        break;
+      case 'not-found':
+        document.title = 'Photo Not Found - VisualService';
+        break;
+      case 'feedback-submitted':
+        document.title = 'Thank You - VisualService';
+        break;
+      default:
+        document.title = 'Verifying... - VisualService';
+    }
+  }, [viewState, code]);
+
   const verifyCode = async (codeToVerify: string) => {
     setViewState('loading');
     const result = await verifyPhotoCode(codeToVerify);
@@ -34,6 +52,7 @@ export default function VerifyPage() {
     if (result && result.verified) {
       setVerificationResult(result);
       setViewState('verified');
+      trackEvent('code_verified', { code: codeToVerify });
       // Log the verification
       logVerification(codeToVerify);
     } else {
@@ -69,6 +88,7 @@ export default function VerifyPage() {
     setIsSubmitting(false);
 
     if (result.success) {
+      trackEvent('feedback_submitted', { code, rating, has_comment: !!comment.trim() });
       setViewState('feedback-submitted');
     } else {
       alert('Failed to submit feedback. Please try again.');
@@ -211,6 +231,7 @@ export default function VerifyPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 py-3 px-6 bg-white text-slate-900 font-semibold rounded-lg hover:bg-slate-100 transition-colors"
+                  onClick={() => trackEvent('google_review_clicked', { code, rating })}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

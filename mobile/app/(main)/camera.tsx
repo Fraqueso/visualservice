@@ -15,7 +15,12 @@ import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-ca
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { captureRef } from 'react-native-view-shot';
+let captureRef: any = null;
+try {
+  captureRef = require('react-native-view-shot').captureRef;
+} catch {
+  console.log('[Camera] react-native-view-shot not available (Expo Go)');
+}
 import * as ImageManipulator from 'expo-image-manipulator';
 import Slider from '@react-native-community/slider';
 import { generateUniqueCode } from '../../utils/codeGenerator';
@@ -23,6 +28,7 @@ import { generateImageHash, generateWatermarkText } from '../../utils/watermark'
 import { usePhotoStore } from '../../store/photoStore';
 import { useAuthStore } from '../../store/authStore';
 import { Album } from '../../services/supabase';
+import { trackEvent } from '../../services/analytics';
 import * as Device from 'expo-device';
 
 const WATERMARK_WIDTH = 1200;
@@ -93,18 +99,27 @@ export default function CameraScreen() {
   };
 
   const processWatermarkedImage = async () => {
-    if (!watermarkViewRef.current || !capturedImageUri) return;
+    if (!capturedImageUri) return;
 
     try {
-      // Capture the watermarked view
-      const watermarkedUri = await captureRef(watermarkViewRef, {
-        format: 'jpg',
-        quality: 0.9,
-      });
+      let imageToUpload: string;
 
-      // Compress the watermarked image
+      if (captureRef && watermarkViewRef.current) {
+        // Full watermarking with react-native-view-shot (dev builds)
+        const watermarkedUri = await captureRef(watermarkViewRef, {
+          format: 'jpg',
+          quality: 0.9,
+        });
+        imageToUpload = watermarkedUri;
+      } else {
+        // Fallback: upload without burned-in watermark (Expo Go)
+        console.log('[Camera] Using fallback: watermark not burned into image (Expo Go mode)');
+        imageToUpload = capturedImageUri;
+      }
+
+      // Compress the image
       const processed = await ImageManipulator.manipulateAsync(
-        watermarkedUri,
+        imageToUpload,
         [{ resize: { width: 2048 } }],
         {
           compress: 0.85,
@@ -143,6 +158,11 @@ export default function CameraScreen() {
       if (error) {
         throw error;
       }
+
+      trackEvent('photo_captured', {
+        has_album: !!selectedAlbum,
+        has_overlay: !!overlayImageUri,
+      });
 
       // Navigate to post-capture screen
       router.push({

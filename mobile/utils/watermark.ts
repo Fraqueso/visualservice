@@ -1,7 +1,13 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import { format } from 'date-fns';
-import { captureRef } from 'react-native-view-shot';
 import { View } from 'react-native';
+
+let captureRef: any = null;
+try {
+  captureRef = require('react-native-view-shot').captureRef;
+} catch {
+  console.log('[Watermark] react-native-view-shot not available (Expo Go)');
+}
 
 interface WatermarkOptions {
   code: string;
@@ -116,7 +122,12 @@ export function calculateWatermarkDimensions(
  */
 export async function captureWatermarkedImage(
   viewRef: React.RefObject<View>
-): Promise<string> {
+): Promise<string | null> {
+  if (!captureRef) {
+    console.log('[Watermark] captureRef not available (Expo Go), skipping watermark capture');
+    return null;
+  }
+
   try {
     if (!viewRef.current) {
       throw new Error('View ref is not available');
@@ -145,12 +156,13 @@ export async function processAndWatermarkImage(
   viewRef: React.RefObject<View>
 ): Promise<{ uri: string; width: number; height: number }> {
   try {
-    // First capture the watermarked view
+    // Try to capture the watermarked view (unavailable in Expo Go)
     const watermarkedUri = await captureWatermarkedImage(viewRef);
+    const sourceUri = watermarkedUri || imageUri;
 
-    // Then compress and resize the watermarked image
+    // Compress and resize the image
     const result = await ImageManipulator.manipulateAsync(
-      watermarkedUri,
+      sourceUri,
       [{ resize: { width: 2048 } }],
       {
         compress: 0.85,

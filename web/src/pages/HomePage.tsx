@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function HomePage() {
   const [code, setCode] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'VisualService - Photo Verification';
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

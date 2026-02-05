@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { getVerificationUrl, formatCodeForDisplay } from '../../utils/codeGenerator';
 import { generateWatermarkText } from '../../utils/watermark';
 import { usePhotoStore } from '../../store/photoStore';
+import { trackEvent } from '../../services/analytics';
 
 export default function PostCaptureScreen() {
   const router = useRouter();
@@ -62,12 +63,14 @@ export default function PostCaptureScreen() {
   const handleCopyCode = async () => {
     await Clipboard.setStringAsync(code);
     setCopiedCode(true);
+    trackEvent('code_copied', { code });
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const handleCopyLink = async () => {
     await Clipboard.setStringAsync(verificationUrl);
     setCopiedLink(true);
+    trackEvent('code_copied', { code, type: 'link' });
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
@@ -77,6 +80,7 @@ export default function PostCaptureScreen() {
         message: `Verify my work at: ${verificationUrl}\n\nVerification Code: ${code}`,
         title: 'VisualService Verification',
       });
+      trackEvent('photo_shared', { code });
     } catch (error) {
       console.error('Share error:', error);
     }

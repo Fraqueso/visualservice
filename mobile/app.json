@@ -47,8 +47,19 @@
         {
           "cameraPermission": "VisualService needs camera access to capture photos for verification."
         }
-      ]
+      ],
+      "@sentry/react-native/expo",
+      "expo-updates",
+      "@sentry/react-native"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "experiments": {
       "typedRoutes": true
     },

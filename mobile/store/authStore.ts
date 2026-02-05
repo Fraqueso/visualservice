@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { supabase, Profile } from '../services/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import { trackEvent, identifyUser, resetAnalytics } from '../services/analytics';
+import { setUser as setSentryUser, clearUser as clearSentryUser } from '../services/sentry';
 
 interface AuthState {
   session: Session | null;
@@ -109,6 +111,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) throw error;
 
+      if (data.user) {
+        trackEvent('user_signed_up');
+        identifyUser(data.user.id, { email });
+        setSentryUser(data.user.id, email);
+      }
+
       return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
@@ -129,6 +137,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) throw error;
 
+      if (data.user) {
+        trackEvent('user_signed_in');
+        identifyUser(data.user.id, { email });
+        setSentryUser(data.user.id, email);
+      }
+
       return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -142,6 +156,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
       await supabase.auth.signOut();
+      trackEvent('user_signed_out');
+      resetAnalytics();
+      clearSentryUser();
       set({
         session: null,
         user: null,
